@@ -29,7 +29,7 @@ export function ReviewForm({
       // If they named an event, find it or create it (first-review-creates-the-event pattern)
       if (eventName.trim()) {
         const { data: existing } = await supabase
-          .from("Events")
+          .from("events")
           .select("id")
           .eq("name", eventName.trim())
           .maybeSingle();
@@ -38,7 +38,7 @@ export function ReviewForm({
           eventId = existing.id;
         } else {
           const { data: created, error: createErr } = await supabase
-            .from("Events")
+            .from("events")
             .insert({
               name: eventName.trim(),
               date: eventDate || null,
