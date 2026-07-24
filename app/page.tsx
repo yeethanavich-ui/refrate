@@ -5,6 +5,8 @@ import Link from "next/link";
 import { supabase, Referee } from "@/lib/supabaseClient";
 
 export default function HomePage() {
+  const [isFocused, setIsFocused] = useState(false);
+  
   const [referees, setReferees] = useState<Referee[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -16,7 +18,7 @@ export default function HomePage() {
   async function loadReferees() {
     setLoading(true);
     const { data } = await supabase
-      .from("Refrees")
+      .from("referees")
       .select("*")
       .order("name", { ascending: true });
     setReferees(data ?? []);
@@ -34,7 +36,7 @@ export default function HomePage() {
   async function handleAddReferee(e: React.FormEvent) {
     e.preventDefault();
     if (!newName.trim()) return;
-    await supabase.from("Refrees").insert({
+    await supabase.from("referees").insert({
       name: newName.trim(),
       region: newRegion.trim() || null,
       certification_level: newLevel.trim() || null,
@@ -57,12 +59,35 @@ export default function HomePage() {
         </p>
       </div>
 
-      <input
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search referee name..."
-        className="w-full rounded border border-piste-700 bg-piste-900 px-4 py-3 text-steel-100 placeholder:text-steel-400"
-      />
+      <div className="relative">
+  <input
+    value={query}
+    onChange={(e) => setQuery(e.target.value)}
+    onFocus={() => setIsFocused(true)}
+    onBlur={() => setTimeout(() => setIsFocused(false), 150)}
+    placeholder="Search referee name..."
+    className="w-full rounded border border-piste-700 bg-piste-900 px-4 py-3 text-steel-100 placeholder:text-steel-400"
+  />
+
+  {isFocused && query.trim().length > 0 && (
+    <ul className="absolute z-10 mt-1 max-h-72 w-full overflow-y-auto rounded-lg border border-piste-700 bg-piste-900 shadow-lg">
+      {filtered.length === 0 ? (
+        <li className="px-4 py-3 text-sm text-steel-400">
+          No matches — try "+ Add a referee" below.
+        </li>
+      ) : (
+        filtered.slice(0, 8).map((ref) => (
+          <li key={ref.id}>
+            <Link href={`/referees/${ref.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-piste-800">
+              <span className="text-steel-100">{ref.name}</span>
+              <span className="text-xs text-steel-400">{ref.region || ""}</span>
+            </Link>
+          </li>
+        ))
+      )}
+    </ul>
+  )}
+</div>
 
       {loading ? (
         <p className="text-steel-400">Loading referees...</p>
