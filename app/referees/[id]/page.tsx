@@ -18,7 +18,7 @@ export default function RefereeProfilePage() {
   async function loadData() {
     setLoading(true);
     const [{ data: refData }, { data: reviewData }] = await Promise.all([
-      supabase.from("Refrees").select("*").eq("id", refId).single(),
+      supabase.from("referees").select("*").eq("id", refId).single(),
       supabase
         .from("review")
         .select("*")
