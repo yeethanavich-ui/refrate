@@ -7,6 +7,7 @@ export type Profile = {
   id: string;
   usa_fencing_number: string;
   display_name: string | null;
+  is_admin: boolean;
 };
 
 export function useUser() {
