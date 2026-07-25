@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AuthStatus } from "@/components/AuthStatus";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -20,11 +21,14 @@ export default function RootLayout({
             <Link href="/" className="font-display text-xl tracking-wide text-steel-100">
               REF<span className="text-touche">REVIEWS</span>
             </Link>
-            <nav className="text-sm text-steel-300">
-              <Link href="/" className="hover:text-touche">
-                Search referees
-              </Link>
-            </nav>
+            <div className="flex items-center gap-6">
+              <nav className="text-sm text-steel-300">
+                <Link href="/" className="hover:text-touche">
+                  Search referees
+                </Link>
+              </nav>
+              <AuthStatus />
+            </div>
           </div>
         </header>
         <main className="mx-auto max-w-4xl px-6 py-10">{children}</main>

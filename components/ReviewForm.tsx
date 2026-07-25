@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
+import { useUser } from "@/lib/useUser";
 
 export function ReviewForm({
   refId,
@@ -10,13 +12,39 @@ export function ReviewForm({
   refId: number;
   onSubmitted: () => void;
 }) {
-  const [reviewerName, setReviewerName] = useState("");
+  const { userId, profile, loading: userLoading } = useUser();
+
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [eventName, setEventName] = useState("");
   const [eventDate, setEventDate] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  if (userLoading) return null;
+
+  if (!userId) {
+    return (
+      <div className="rounded-lg border border-piste-700 bg-piste-900 p-6 text-center">
+        <p className="text-steel-300">
+          You need an account (with your USA Fencing number) to leave a
+          review.
+        </p>
+        <Link
+          href="/signup"
+          className="mt-3 inline-block rounded bg-touche px-4 py-2 font-medium text-white hover:bg-touche-dim"
+        >
+          Sign up to review
+        </Link>
+        <p className="mt-2 text-sm text-steel-400">
+          Already have an account?{" "}
+          <Link href="/login" className="text-touche hover:underline">
+            Log in
+          </Link>
+        </p>
+      </div>
+    );
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -26,7 +54,6 @@ export function ReviewForm({
     try {
       let eventId: number | null = null;
 
-      // If they named an event, find it or create it (first-review-creates-the-event pattern)
       if (eventName.trim()) {
         const { data: existing } = await supabase
           .from("events")
@@ -39,11 +66,7 @@ export function ReviewForm({
         } else {
           const { data: created, error: createErr } = await supabase
             .from("events")
-            .insert({
-              name: eventName.trim(),
-              date: eventDate || null,
-              location: null,
-            })
+            .insert({ name: eventName.trim(), date: eventDate || null, location: null })
             .select("id")
             .single();
           if (createErr) throw createErr;
@@ -54,15 +77,22 @@ export function ReviewForm({
       const { error: insertErr } = await supabase.from("review").insert({
         ref_id: refId,
         event_id: eventId,
-        reviewer_name: reviewerName.trim() || "Anonymous",
+        reviewer_id: userId,
+        reviewer_name: profile?.display_name || profile?.usa_fencing_number,
         rating,
         comment: comment.trim() || null,
         date: eventDate || null,
       });
 
-      if (insertErr) throw insertErr;
+      if (insertErr) {
+        if (insertErr.code === "23505") {
+          throw new Error(
+            "You've already reviewed this referee for this event."
+          );
+        }
+        throw insertErr;
+      }
 
-      setReviewerName("");
       setRating(5);
       setComment("");
       setEventName("");
@@ -80,19 +110,12 @@ export function ReviewForm({
       onSubmit={handleSubmit}
       className="space-y-4 rounded-lg border border-piste-700 bg-piste-900 p-6"
     >
-      <h3 className="font-display text-lg text-steel-100">Leave a review</h3>
-
-      <div>
-        <label className="mb-1 block text-sm text-steel-300">
-          Your name (optional)
-        </label>
-        <input
-          value={reviewerName}
-          onChange={(e) => setReviewerName(e.target.value)}
-          className="w-full rounded border border-piste-700 bg-piste-950 px-3 py-2 text-steel-100"
-          placeholder="Anonymous"
-        />
-      </div>
+      <h3 className="font-display text-lg text-steel-100">
+        Leave a review as{" "}
+        <span className="text-touche">
+          {profile?.display_name || profile?.usa_fencing_number}
+        </span>
+      </h3>
 
       <div>
         <label className="mb-1 block text-sm text-steel-300">
@@ -107,9 +130,7 @@ export function ReviewForm({
       </div>
 
       <div>
-        <label className="mb-1 block text-sm text-steel-300">
-          Event date
-        </label>
+        <label className="mb-1 block text-sm text-steel-300">Event date</label>
         <input
           type="date"
           value={eventDate}
