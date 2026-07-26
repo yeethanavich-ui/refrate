@@ -32,4 +32,6 @@ export type Review = {
   ref_id: number;
   comment: string | null;
   rating: number;
+  reviewer_id: string | null;
+  approved: boolean;
 };

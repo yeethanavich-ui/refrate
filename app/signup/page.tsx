@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import HCaptcha from "@hcaptcha/react-hcaptcha";
 import { supabase } from "@/lib/supabaseClient";
 
 export default function SignupPage() {
@@ -13,16 +14,25 @@ export default function SignupPage() {
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const captchaRef = useRef<HCaptcha>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    if (!captchaToken) {
+      setError("Please complete the captcha.");
+      return;
+    }
+
     setSubmitting(true);
 
     try {
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
+        options: { captchaToken },
       });
       if (signUpError) throw signUpError;
 
@@ -43,6 +53,8 @@ export default function SignupPage() {
       router.push("/");
     } catch (err: any) {
       setError(err.message ?? "Something went wrong.");
+      captchaRef.current?.resetCaptcha();
+      setCaptchaToken(null);
     } finally {
       setSubmitting(false);
     }
@@ -106,6 +118,13 @@ export default function SignupPage() {
             className="w-full rounded border border-piste-700 bg-piste-900 px-3 py-2 text-steel-100"
           />
         </div>
+
+        <HCaptcha
+          ref={captchaRef}
+          sitekey="a39aedfc-43d0-4302-8e8a-4a6eb9403250"
+          onVerify={(token) => setCaptchaToken(token)}
+          onExpire={() => setCaptchaToken(null)}
+        />
 
         {error && <p className="text-sm text-touche">{error}</p>}
 

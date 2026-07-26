@@ -34,7 +34,10 @@ export default function RootLayout({
         <main className="mx-auto max-w-4xl px-6 py-10">{children}</main>
         <footer className="mx-auto max-w-4xl px-6 py-10 text-xs text-steel-400">
           Ratings reflect individual fencers&apos; experiences at specific
-          tournaments. Be fair, be specific, be honest.
+          tournaments. Be fair, be specific, be honest.{" "}
+          <Link href="/terms" className="text-touche hover:underline">
+            Terms of Use
+          </Link>
         </footer>
       </body>
     </html>

@@ -20,6 +20,7 @@ export function ReviewForm({
   const [eventDate, setEventDate] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [justSubmitted, setJustSubmitted] = useState(false);
 
   if (userLoading) return null;
 
@@ -97,6 +98,7 @@ export function ReviewForm({
       setComment("");
       setEventName("");
       setEventDate("");
+      setJustSubmitted(true);
       onSubmitted();
     } catch (err: any) {
       setError(err.message ?? "Something went wrong. Please try again.");
@@ -166,6 +168,11 @@ export function ReviewForm({
       </div>
 
       {error && <p className="text-sm text-touche">{error}</p>}
+      {justSubmitted && (
+        <p className="text-sm text-green-500">
+          Thanks — your review is pending approval and will appear once reviewed.
+        </p>
+      )}
 
       <button
         type="submit"
