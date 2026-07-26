@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import HCaptcha from "@hcaptcha/react-hcaptcha";
 import { supabase } from "@/lib/supabaseClient";
 
 export default function LoginPage() {
@@ -11,18 +12,30 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const captchaRef = useRef<HCaptcha>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    if (!captchaToken) {
+      setError("Please complete the captcha.");
+      return;
+    }
+
     setSubmitting(true);
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
+      options: { captchaToken },
     });
     setSubmitting(false);
+
     if (signInError) {
       setError(signInError.message);
+      captchaRef.current?.resetCaptcha();
+      setCaptchaToken(null);
       return;
     }
     router.push("/");
@@ -44,9 +57,7 @@ export default function LoginPage() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm text-steel-300">
-            Password
-          </label>
+          <label className="mb-1 block text-sm text-steel-300">Password</label>
           <input
             type="password"
             required
@@ -55,6 +66,13 @@ export default function LoginPage() {
             className="w-full rounded border border-piste-700 bg-piste-900 px-3 py-2 text-steel-100"
           />
         </div>
+
+        <HCaptcha
+          ref={captchaRef}
+          sitekey="a39aedfc-43d0-4302-8e8a-4a6eb9403250"
+          onVerify={(token) => setCaptchaToken(token)}
+          onExpire={() => setCaptchaToken(null)}
+        />
 
         {error && <p className="text-sm text-touche">{error}</p>}
 
