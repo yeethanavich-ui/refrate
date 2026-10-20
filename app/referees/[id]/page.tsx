@@ -6,10 +6,15 @@ import Link from "next/link";
 import { supabase, Referee, Review } from "@/lib/supabaseClient";
 import { StarRating } from "@/components/StarRating";
 import { ReviewForm } from "@/components/ReviewForm";
+import { ReviewCard } from "@/components/ReviewCard";
+import { useUser } from "@/lib/useUser";
 
 export default function RefereeProfilePage() {
   const params = useParams();
   const refId = Number(params.id);
+  const { userId, profile } = useUser();
+  const isAdmin = !!profile?.is_admin;
+  const isBanned = !!profile?.is_banned;
 
   const [referee, setReferee] = useState<Referee | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -35,9 +40,12 @@ export default function RefereeProfilePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refId]);
 
+  // Only approved reviews count toward the public rating
+  const approvedReviews = reviews.filter((r) => r.approved);
   const avgRating =
-    reviews.length > 0
-      ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+    approvedReviews.length > 0
+      ? approvedReviews.reduce((sum, r) => sum + r.rating, 0) /
+        approvedReviews.length
       : 0;
 
   if (loading) return <p className="text-steel-400">Loading...</p>;
@@ -63,7 +71,8 @@ export default function RefereeProfilePage() {
           <StarRating value={avgRating} />
           <span className="text-steel-300">
             {avgRating > 0 ? avgRating.toFixed(1) : "No ratings yet"} (
-            {reviews.length} review{reviews.length !== 1 ? "s" : ""})
+            {approvedReviews.length} review
+            {approvedReviews.length !== 1 ? "s" : ""})
           </span>
         </div>
       </div>
@@ -78,23 +87,13 @@ export default function RefereeProfilePage() {
           </p>
         ) : (
           reviews.map((r) => (
-            <div
+            <ReviewCard
               key={r.id}
-              className="rounded-lg border border-piste-700 bg-piste-900 p-5"
-            >
-              <div className="flex items-center justify-between">
-                <StarRating value={r.rating} />
-                <span className="text-xs text-steel-400">
-                  {r.date ?? new Date(r.created_at).toLocaleDateString()}
-                </span>
-              </div>
-              {r.comment && (
-                <p className="mt-2 text-steel-200">{r.comment}</p>
-              )}
-              <p className="mt-2 text-sm text-steel-400">
-                — {r.reviewer_name || "Anonymous"}
-              </p>
-            </div>
+              review={r}
+              isAdmin={isAdmin}
+              canEdit={isAdmin || (!!userId && r.reviewer_id === userId && !isBanned)}
+              onChanged={loadData}
+            />
           ))
         )}
       </div>

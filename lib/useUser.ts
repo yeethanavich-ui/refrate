@@ -8,6 +8,7 @@ export type Profile = {
   usa_fencing_number: string;
   display_name: string | null;
   is_admin: boolean;
+  is_banned: boolean;
 };
 
 export function useUser() {
